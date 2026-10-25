@@ -1,0 +1,6 @@
+node_modules
+dist
+# Sierra's game data is copyrighted: keep it out of the repo
+public/games
+.env.local
+.claude

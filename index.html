@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QuestPort</title>
+    <style>
+      :root {
+        --bg: #0b0b12;
+        --panel: #15151f;
+        --text: #c8c8d8;
+        --muted: #7a7a90;
+        --accent: #55ffff;
+        --border: #2a2a3a;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px;
+        gap: 12px;
+      }
+      #stage {
+        position: relative;
+        width: min(100%, 960px, calc((100vh - 120px) * 4 / 3));
+        aspect-ratio: 4 / 3;
+        background: #000;
+        border: 1px solid var(--border);
+        box-shadow: 0 0 40px rgba(85, 85, 255, 0.15);
+      }
+      #screen { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: crosshair; }
+      #overlay {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 16px; padding: 24px; text-align: center;
+        background: rgba(0, 0, 0, 0.85);
+      }
+      #overlay[hidden] { display: none; }
+      #overlay-text { max-width: 36em; font-size: 16px; }
+      #games { display: flex; flex-direction: column; gap: 8px; }
+      #games[hidden] { display: none; }
+      #games button {
+        font: inherit; padding: 10px 20px; background: var(--panel); color: var(--text);
+        border: 1px solid var(--border); cursor: pointer; min-width: 24em;
+      }
+      #games button:hover, #games button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+      #picker label {
+        display: inline-block; padding: 8px 16px; border: 1px solid var(--accent);
+        color: var(--accent); cursor: pointer;
+      }
+      #picker input { display: none; }
+      .help { color: var(--muted); max-width: 960px; text-align: center; }
+      kbd { color: var(--text); border: 1px solid var(--border); padding: 0 4px; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="screen"></canvas>
+      <div id="overlay">
+        <div id="overlay-text">Loading…</div>
+        <div id="games"></div>
+        <div id="picker" hidden>
+          <label>Choose files…<input id="files" type="file" multiple /></label>
+        </div>
+      </div>
+    </div>
+    <div class="help">
+      Type commands and press <kbd>Enter</kbd> · arrows or click to walk ·
+      <kbd>F1</kbd> help · <kbd>F2</kbd> sound · <kbd>F3</kbd> repeat · <kbd>F5</kbd> save · <kbd>F7</kbd> restore ·
+      <kbd>F9</kbd> restart · <kbd>Tab</kbd> inventory · <kbd>Esc</kbd> pause, or the menu in v2.2 (also click the top line)
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
