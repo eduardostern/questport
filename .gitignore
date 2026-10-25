@@ -5,3 +5,4 @@ public/games
 .env.local
 .claude
 .wrangler
+packs

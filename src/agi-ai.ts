@@ -17,8 +17,13 @@ export class AgiAiBackdrop {
   private cells = new Int32Array(40 * 25);
   private baseCache: { src: unknown; picTop: number; visual: Uint8Array } | null = null;
 
-  constructor(dir: string, canvas: HTMLCanvasElement, private getInterp: () => Interpreter | null) {
-    this.renderer = new AiRenderer(dir, canvas, () => this.describe());
+  constructor(
+    dir: string,
+    canvas: HTMLCanvasElement,
+    private getInterp: () => Interpreter | null,
+    load?: (path: string) => Promise<Uint8Array>,
+  ) {
+    this.renderer = new AiRenderer(dir, canvas, () => this.describe(), load);
   }
 
   load(): Promise<number> {

@@ -10,6 +10,24 @@ import { startSciGame } from './sci-host';
 import { AiBackdrop } from './sci-ai';
 import { AgiAiBackdrop } from './agi-ai';
 import type { SciEngine } from './sci/engine';
+import { packKey, packLoader } from './ai-pack';
+
+type AiSource = { dir: string; load?: (path: string) => Promise<Uint8Array> };
+
+/** Looks for a published AI art pack for these exact game files (it only decrypts with them). */
+async function findPack(files: GameFiles): Promise<AiSource | undefined> {
+  const useAi = document.getElementById('use-ai') as HTMLInputElement | null;
+  if (useAi && !useAi.checked) return undefined;
+  try {
+    const pk = await packKey(files);
+    if (!pk) return undefined;
+    const load = packLoader('packs', pk);
+    await load('index.json');
+    return { dir: `packs/${pk.id}`, load };
+  } catch {
+    return undefined; // no pack for this game/version
+  }
+}
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
@@ -205,16 +223,15 @@ async function filesFromUpload(list: FileList): Promise<GameFiles> {
   return files;
 }
 
-async function startGame(files: GameFiles, gameId = 'custom', aiDir?: string): Promise<void> {
+async function startGame(files: GameFiles, gameId = 'custom', ai?: AiSource): Promise<void> {
   if (isSciGame(files)) {
     let engine: SciEngine | undefined;
     let present = (px: Uint8Array) => host.present(px);
-    if (aiDir) {
-      const ai = new AiBackdrop(aiDir, canvas, () => engine);
-      const n = await ai.load();
-      console.log(`AI images: ${n} repainted pictures`);
-      aiBackdrop = ai;
-      present = (px) => ai.present(px);
+    if (ai) {
+      const b = new AiBackdrop(ai.dir, canvas, () => engine, ai.load);
+      console.log(`AI images: ${await b.load()} repaints`);
+      aiBackdrop = b;
+      present = (px) => b.present(px);
     }
     overlay.hidden = true;
     engine = startSciGame(files, gameId, canvas, present, (msg) => showOverlay(msg, false));
@@ -225,8 +242,8 @@ async function startGame(files: GameFiles, gameId = 'custom', aiDir?: string): P
     showOverlay(`Missing game files: ${missing.join(', ')}. This player supports AGI v2 games (separate LOGDIR/PICDIR/VIEWDIR/SNDDIR files).`, true);
     return;
   }
-  if (aiDir) {
-    agiAi = new AgiAiBackdrop(aiDir, canvas, () => interp);
+  if (ai) {
+    agiAi = new AgiAiBackdrop(ai.dir, canvas, () => interp, ai.load);
     aiBackdrop = agiAi;
     console.log(`AI images: ${await agiAi.load()} repaints`);
   }
@@ -244,13 +261,19 @@ async function startGame(files: GameFiles, gameId = 'custom', aiDir?: string): P
 }
 
 fileInput.addEventListener('change', async () => {
-  if (fileInput.files?.length) startGame(await filesFromUpload(fileInput.files));
+  if (fileInput.files?.length) {
+    const files = await filesFromUpload(fileInput.files);
+    await startGame(files, 'custom', await findPack(files));
+  }
 });
 
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', async (e) => {
   e.preventDefault();
-  if (!interp && e.dataTransfer?.files.length) startGame(await filesFromUpload(e.dataTransfer.files));
+  if (!interp && e.dataTransfer?.files.length) {
+    const files = await filesFromUpload(e.dataTransfer.files);
+    await startGame(files, 'custom', await findPack(files));
+  }
 });
 
 window.addEventListener('resize', resize);
@@ -283,7 +306,7 @@ function gameButton(label: string, onClick: () => void): HTMLButtonElement {
         const dir = g.dir ?? g.id;
         const files = await fetchBundled(`games/${dir}`);
         // Variants of a game share its saved games.
-        if (files) await startGame(files, dir, g.ai ? `games/${dir}/ai` : undefined);
+        if (files) await startGame(files, dir, g.ai ? { dir: `games/${dir}/ai` } : undefined);
         else showOverlay(`Could not load the files in public/games/${dir}.`, true);
       }),
     );

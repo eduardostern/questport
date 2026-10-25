@@ -39,11 +39,22 @@ export class AiRenderer {
   private queued = false;
   private hasFrame = false;
 
+  /** Reads a file of the art pack (plain files, or an encrypted published pack). */
+  private readFile: (path: string) => Promise<Uint8Array>;
+
   constructor(
-    private dir: string,
+    dir: string,
     private canvas: HTMLCanvasElement,
     private getFrame: () => AiFrame | null,
+    load?: (path: string) => Promise<Uint8Array>,
   ) {
+    this.readFile =
+      load ??
+      (async (path) => {
+        const r = await fetch(`${dir}/${path}`);
+        if (!r.ok || (r.headers.get('content-type') ?? '').includes('text/html')) throw new Error(`${path}: ${r.status}`);
+        return new Uint8Array(await r.arrayBuffer());
+      });
     this.out.width = OUT_W;
     this.out.height = OUT_H;
     this.octx = this.out.getContext('2d')!;
@@ -60,36 +71,30 @@ export class AiRenderer {
       /* without the font, text falls back to the browser's sans-serif */
     }
     try {
-      const r = await fetch(`${this.dir}/index.json`);
-      if (r.ok) {
-        const j = await r.json();
-        this.index = 'pics' in j ? { pics: j.pics ?? {}, views: j.views ?? {} } : { pics: j, views: {} };
-      }
+      const j = JSON.parse(new TextDecoder().decode(await this.readFile('index.json')));
+      this.index = 'pics' in j ? { pics: j.pics ?? {}, views: j.views ?? {} } : { pics: j, views: {} };
     } catch {
       /* no repaints: everything stays original */
     }
     return Object.keys(this.index.pics).length + Object.keys(this.index.views).length;
   }
 
-  private decode(url: string, w: number, h: number, mirrored = false): Promise<RgbaImage> {
-    return new Promise((resolve, reject) => {
-      const im = new Image();
-      im.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = w;
-        c.height = h;
-        const x = c.getContext('2d', { willReadFrequently: true })!;
-        x.imageSmoothingQuality = 'high';
-        if (mirrored) {
-          x.translate(w, 0);
-          x.scale(-1, 1);
-        }
-        x.drawImage(im, 0, 0, w, h);
-        resolve({ w, h, px: new Uint32Array(x.getImageData(0, 0, w, h).data.buffer) });
-      };
-      im.onerror = reject;
-      im.src = url;
-    });
+  /** Loads an image file of the pack and scales it to w x h pixels. */
+  private async decode(path: string, w: number, h: number, mirrored = false): Promise<RgbaImage> {
+    const bytes = await this.readFile(path);
+    const im = await createImageBitmap(new Blob([bytes as Uint8Array<ArrayBuffer>]));
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const x = c.getContext('2d', { willReadFrequently: true })!;
+    x.imageSmoothingQuality = 'high';
+    if (mirrored) {
+      x.translate(w, 0);
+      x.scale(-1, 1);
+    }
+    x.drawImage(im, 0, 0, w, h);
+    im.close();
+    return { w, h, px: new Uint32Array(x.getImageData(0, 0, w, h).data.buffer) };
   }
 
   private background(nr: number, mirrored: boolean, picH: number): RgbaImage | null {
@@ -100,7 +105,7 @@ export class AiRenderer {
     // Keep only the most recent rooms decoded (about 4 MB each).
     while (this.backgrounds.size >= 8) this.backgrounds.delete(this.backgrounds.keys().next().value!);
     this.backgrounds.set(key, null);
-    this.decode(`${this.dir}/${file}`, 320 * AI_SCALE, picH * AI_SCALE, mirrored).then(
+    this.decode(file, 320 * AI_SCALE, picH * AI_SCALE, mirrored).then(
       (img) => {
         this.backgrounds.set(key, img);
         this.redrawSoon();
@@ -117,11 +122,11 @@ export class AiRenderer {
     this.views.set(nr, null);
     void (async () => {
       try {
-        const m: ViewSheetManifest = await (await fetch(`${this.dir}/${file}`)).json();
+        const m: ViewSheetManifest = JSON.parse(new TextDecoder().decode(await this.readFile(file)));
         const entry = { m, sheets: m.sheets.map(() => null as RgbaImage | null) };
         await Promise.all(
           m.sheets.map(async (s, i) => {
-            entry.sheets[i] = await this.decode(`${this.dir}/${s.file}`, s.w * (m.xs ?? 1) * AI_SCALE, s.h * AI_SCALE);
+            entry.sheets[i] = await this.decode(s.file, s.w * (m.xs ?? 1) * AI_SCALE, s.h * AI_SCALE);
           }),
         );
         this.views.set(nr, entry);

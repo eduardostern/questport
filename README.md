@@ -82,3 +82,12 @@ Saves are stored in the browser's localStorage.
 - Anything without a repaint falls back to the original EGA art. To drop a repaint, remove its entry
   from `public/games/sq3/ai/index.json`.
 - `AI=1 tsx tools/sci-play.ts ...` also writes the blended 1280x800 frame for each screenshot.
+
+## Online version and AI art packs
+
+Live at https://questport.stern.workers.dev (Cloudflare Workers, `npm run deploy`). Players load their own game
+files; nothing is uploaded anywhere.
+
+AI art packs are published encrypted (`tools/ai-pack.ts <game dir>` writes `packs/<id>/`, which is not in git).
+The key is derived from the original game files (`src/ai-pack.ts`), so a pack only opens for someone who loads
+that exact game release. Available packs: Space Quest II v2.0F (AGI 2.936) and Space Quest III v1.018 (SCI0).

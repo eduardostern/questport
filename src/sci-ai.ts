@@ -12,8 +12,13 @@ export class AiBackdrop {
   private frame: Uint8Array | null = null;
   private forced = new Uint8Array(320 * 200);
 
-  constructor(dir: string, canvas: HTMLCanvasElement, private getEngine: () => SciEngine | undefined) {
-    this.renderer = new AiRenderer(dir, canvas, () => this.describe());
+  constructor(
+    dir: string,
+    canvas: HTMLCanvasElement,
+    private getEngine: () => SciEngine | undefined,
+    load?: (path: string) => Promise<Uint8Array>,
+  ) {
+    this.renderer = new AiRenderer(dir, canvas, () => this.describe(), load);
   }
 
   load(): Promise<number> {

@@ -49,11 +49,16 @@
         border: 1px solid var(--border); cursor: pointer; min-width: 24em;
       }
       #games button:hover, #games button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
-      #picker label {
+      #picker { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      #picker[hidden] { display: none; }
+      #picker label.pick {
         display: inline-block; padding: 8px 16px; border: 1px solid var(--accent);
         color: var(--accent); cursor: pointer;
       }
-      #picker input { display: none; }
+      #picker #files { display: none; }
+      #picker .ai-opt { color: var(--muted); font-size: 0.9em; cursor: pointer; }
+      #picker .get { color: var(--muted); font-size: 0.85em; max-width: 34em; text-align: center; line-height: 1.5; }
+      #picker .get a { color: var(--accent); }
       .help { color: var(--muted); max-width: 960px; text-align: center; }
       kbd { color: var(--text); border: 1px solid var(--border); padding: 0 4px; border-radius: 3px; }
     </style>
@@ -65,7 +70,16 @@
         <div id="overlay-text">Loading…</div>
         <div id="games"></div>
         <div id="picker" hidden>
-          <label>Choose files…<input id="files" type="file" multiple /></label>
+          <label class="pick">Choose files…<input id="files" type="file" multiple /></label>
+          <label class="ai-opt"><input id="use-ai" type="checkbox" checked /> Use AI-repainted art when available</label>
+          <div class="get">
+            Need the games? They are still sold in the
+            <a href="https://www.gog.com/en/game/space_quest_1_2_3" target="_blank" rel="noopener">Space Quest</a>,
+            <a href="https://www.gog.com/en/game/kings_quest_1_2_3" target="_blank" rel="noopener">King's Quest</a> and
+            <a href="https://www.gog.com/en/game/police_quest_1_2_3_4" target="_blank" rel="noopener">Police Quest</a> collections.
+            After installing, choose all the files in the game's folder (AGI: LOGDIR, PICDIR, VIEWDIR, SNDDIR, OBJECT,
+            WORDS.TOK, VOL.*; SCI0: RESOURCE.MAP and RESOURCE.*). Nothing is uploaded: files stay in your browser.
+          </div>
         </div>
       </div>
     </div>

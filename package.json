@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && rm -rf dist/games && npx wrangler@4 deploy"
+    "deploy": "npm run build && rm -rf dist/games && (test -d packs && cp -R packs dist/packs || true) && npx wrangler@4 deploy"
   },
   "devDependencies": {
     "@napi-rs/canvas": "^0.1.65",
