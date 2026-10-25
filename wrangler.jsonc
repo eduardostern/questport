@@ -1,0 +1,9 @@
+{
+  // Static site on Cloudflare Workers (assets only). Game data is never deployed: see "deploy" in package.json.
+  "name": "questport",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}
